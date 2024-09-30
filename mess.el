@@ -115,7 +115,7 @@ If LAST-DELETE-P is true, insert a branch, else insert value."
 
 (defun mess/build-character-tree (commands)
   "Read COMMANDS and return a tree for all the inputs and edits."
-  (let ((rest-commands commamds)
+  (let ((rest-commands commands)
         ;; Start with a special token so we can handle our tree operations'
         ;; idiosyncrasies.
         (tree (list (cons "START" 0)))
