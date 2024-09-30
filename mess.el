@@ -151,10 +151,11 @@ If LAST-DELETE-P is true, insert a branch, else insert value."
 
 (defun mess/recreate-original (tree)
   "Recreate text from character TREE in a regular editor way."
-  (when tree
-    (unless (string= (caar tree) "START")
-      (insert (caar tree)))
-    (mess/recreate-original (car (last (cdr tree))))))
+  (let ((sub-tree tree))
+    (while sub-tree
+      (unless (string= (caar sub-tree) "START")
+        (insert (caar sub-tree)))
+      (setf sub-tree (car (last (cdr sub-tree)))))))
 
 (defun mess/recreate-messy (tree)
   "Recreate text from TREE preserving the mess."
