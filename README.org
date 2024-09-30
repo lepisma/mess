@@ -1,0 +1,5 @@
+#+TITLE: mess
+
+Scripts and tool to preserve and display the mess I make while working on
+anything. Starting with prose, I have ~mess.el~ that tracks and displays edits
+throughout the process of writing for an upcoming blog project.
