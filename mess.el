@@ -11,16 +11,15 @@ branch. When the path is empty, we return the sub-tree."
             sub-path (cdr sub-path)))
     sub-tree))
 
-(defun mess/tree-add-child (tree sub-tree)
-  (append tree (list sub-tree)))
-
+;; TODO: Make non-recursive
 (defun mess/tree-insert-branch (tree path sub-tree)
   (pcase (car path)
-    ((pred null) (mess/tree-add-child tree sub-tree))
+    ((pred null) (append tree (list sub-tree)))
     (i (cons (car tree) (append (take i (cdr tree))
                                 (list (mess/tree-insert-branch (nth (+ i 1) tree) (cdr path) sub-tree))
                                 (drop (+ i 1) (cdr tree)))))))
 
+;; TODO: Make non-recursive
 (defun mess/tree-insert-value (tree path value)
   "Insert a node in the path without creating a new branch."
   (pcase (car path)
@@ -179,6 +178,7 @@ If LAST-DELETE-P is true, insert a branch, else insert value."
     ;; TODO: This is what needs to be implemented
     (mess/recreate-messy (cdr tree))))
 
+;; TODO
 (defun mess/start-org ()
   "Start writing in org mode. This sets up the buffer to ensure logs
 are nice."
