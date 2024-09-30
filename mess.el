@@ -4,10 +4,12 @@
 (defun mess/tree-get (tree path)
   "Path is a list that tells which child to jump to at each
 branch. When the path is empty, we return the sub-tree."
-  (pcase (car path)
-    ((pred null) tree)
-    (i (mess/tree-get (nth i (cdr tree))
-                      (cdr path)))))
+  (let ((subpath path)
+        (subtree tree))
+    (while (not (null (car subpath)))
+      (setf subtree (nth (car subpath) (cdr subtree))
+            subpath (cdr subpath)))
+    subtree))
 
 (ert-deftest mess//tree-test-get ()
   (should (equal (mess/tree-get '() '()) '()))
