@@ -111,43 +111,57 @@ If LAST-DELETE-P is true, insert a branch, else insert value."
       (mess/character-tree-ins-branch tree path char timestamp)
     (mess/character-tree-ins-value tree path char timestamp)))
 
-(defun mess/build-character-tree (commands &optional tree ins-path last-delete-p)
-  (if (null tree)
-      ;; Start with a special token so we can handle our tree operations'
-      ;; idiosyncrasies.
-      (mess/build-character-tree commands (list (cons "START" 0)) ins-path)
-    (pcase (plist-get (car commands) :op)
-      ((pred null) tree)
-      ('delete-line
-       ;; Need to go back to start of the line and turn on delete flag
-       (mess/build-character-tree (cdr commands) tree (mess/character-tree-go-left-line tree ins-path) t))
-      ('org-delete-backward-char
-       (mess/build-character-tree (cdr commands) tree (mess/character-tree-go-left tree ins-path) t))
-      ('backward-delete-word
-       (mess/build-character-tree (cdr commands) tree (mess/character-tree-go-left-word tree ins-path) t))
-      ('org-return
-       (let ((result (mess/character-tree-ins-char tree ins-path "\n" (plist-get (car commands) :timestamp) last-delete-p)))
-         (mess/build-character-tree (cdr commands) (car result) (cdr result))))
-      ('left-char
-       ;; We lose the last item in the path in this case. To recover this, we will
-       ;; rely on character typing timestamps.
-       (mess/build-character-tree (cdr commands) tree (mess/character-tree-go-left tree ins-path)))
-      ('right-char
-       (mess/build-character-tree (cdr commands) tree (mess/character-tree-go-right tree ins-path)))
-      ('right-word
-       (signal 'unsupported-cmd "right-word not supported yet."))
-      ('left-word
-       (signal 'unsupported-cmd "left-word not supported yet."))
-      ('org-self-insert-command
-       (let ((result (mess/character-tree-ins-char tree
-                                                   ins-path
-                                                   (pcase (plist-get (car commands) :key)
-                                                     ("SPC" " ")
-                                                     (char char))
-                                                   (plist-get (car commands) :timestamp)
-                                                   last-delete-p)))
-         (mess/build-character-tree (cdr commands) (car result) (cdr result))))
-      (_ (signal 'unsupported-cmd (format "Unsupported command: %s" (car commands)))))))
+(defun mess/build-character-tree (commands)
+  "Read COMMANDS and return a tree for all the inputs and edits."
+  (let ((rest-commands commamds)
+        ;; Start with a special token so we can handle our tree operations'
+        ;; idiosyncrasies.
+        (tree (list (cons "START" 0)))
+        ins-path
+        last-delete-p)
+    (while rest-commands
+      (pcase (plist-get (car rest-commands) :op)
+        ('delete-line
+         ;; Need to go back to start of the line and turn on delete flag
+         (setf ins-path (mess/character-tree-go-left-line tree ins-path)
+               last-delete-p t))
+        ('org-delete-backward-char
+         (setf ins-path (mess/character-tree-go-left tree ins-path)
+               last-delete-p t))
+        ('backward-delete-word
+         (setf ins-path (mess/character-tree-go-left-word tree ins-path)
+               last-delete-p t))
+        ('org-return
+         (let ((result (mess/character-tree-ins-char tree ins-path "\n" (plist-get (car rest-commands) :timestamp) last-delete-p)))
+           (setf tree (car result)
+                 ins-path (cdr result)
+                 last-delete-p nil)))
+        ('left-char
+         ;; We lose the last item in the path in this case. To recover this, we will
+         ;; rely on character typing timestamps.
+         (setf ins-path (mess/character-tree-go-left tree ins-path)
+               last-delete-p nil))
+        ('right-char
+         (setf ins-path (mess/character-tree-go-right tree ins-path)
+               last-delete-p nil))
+        ('right-word
+         (signal 'unsupported-cmd "right-word not supported yet."))
+        ('left-word
+         (signal 'unsupported-cmd "left-word not supported yet."))
+        ('org-self-insert-command
+         (let ((result (mess/character-tree-ins-char tree
+                                                     ins-path
+                                                     (pcase (plist-get (car rest-commands) :key)
+                                                       ("SPC" " ")
+                                                       (char char))
+                                                     (plist-get (car rest-commands) :timestamp)
+                                                     last-delete-p)))
+           (setf tree (car result)
+                 ins-path (cdr result)
+                 last-delete-p nil)))
+        (_ (signal 'unsupported-cmd (format "Unsupported command: %s" (car rest-commands)))))
+      (setf rest-commands (cdr rest-commands)))
+    tree))
 
 (defun mess/recreate-original (tree)
   "Recreate text from character TREE in a regular editor way."
