@@ -12,21 +12,24 @@ branch. When the path is empty, we return the sub-tree."
     sub-tree))
 
 ;; TODO: Make non-recursive
-(defun mess/tree-insert-branch (tree path sub-tree)
+(defun mess/tree-walk-path-apply (tree path function)
+  "Go to PATH in TREE and apply FUNCTION there to inflict change."
   (pcase (car path)
-    ((pred null) (append tree (list sub-tree)))
+    ((pred null) (funcall function tree))
     (i (cons (car tree) (append (take i (cdr tree))
-                                (list (mess/tree-insert-branch (nth (+ i 1) tree) (cdr path) sub-tree))
+                                (list (mess/tree-walk-path-apply (nth (+ i 1) tree) (cdr path) function))
                                 (drop (+ i 1) (cdr tree)))))))
 
-;; TODO: Make non-recursive
+(defun mess/tree-insert-branch (tree path sub-tree)
+  (mess/tree-walk-path-apply tree path
+                             (lambda (tree-at-pos)
+                               (append tree-at-pos (list sub-tree)))))
+
 (defun mess/tree-insert-value (tree path value)
   "Insert a node in the path without creating a new branch."
-  (pcase (car path)
-    ((pred null) (list (car tree) (cons value (cdr tree))))
-    (i (cons (car tree) (append (take i (cdr tree))
-                                (list (mess/tree-insert-value (nth (+ i 1) tree) (cdr path) value))
-                                (drop (+ i 1) (cdr tree)))))))
+  (mess/tree-walk-path-apply tree path
+                             (lambda (tree-at-pos)
+                               (list (car tree-at-pos) (cons value (cdr tree-at-pos))))))
 
 ;; Set up for writing
 (use-package command-log-mode
