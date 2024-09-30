@@ -164,9 +164,6 @@ If LAST-DELETE-P is true, insert a branch, else insert value."
     ;; TODO: This is what needs to be implemented
     (mess/recreate-messy (cdr tree))))
 
-(let ((commands (mess/parse-log "./2024-09-30")))
-  (mess/recreate-original (mess/build-character-tree commands)))
-
 (defun mess/start-org ()
   "Start writing in org mode. This sets up the buffer to ensure logs
 are nice."
